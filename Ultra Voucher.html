@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MikroTik Voucher Generator Pro</title>
+    <style>
+        /* Generator Page Styles */
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .generator-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 15px;
+        }
+        
+        input,
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        .checkbox-group {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        
+        .checkbox-item {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .checkbox-item input {
+            width: auto;
+            margin-right: 8px;
+        }
+        
+        .checkbox-item label {
+            margin-bottom: 0;
+            font-weight: normal;
+        }
+        /* Print Page Styles */
+        
+        .print-container {
+            display: none;
+            padding: 3px;
+        }
+        
+        @media print {
+            body * {
+                visibility: hidden;
+                direction: rtl;
+            }
+            .print-container,
+            .print-container * {
+                visibility: visible;
+            }
+            .print-container {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                padding: 0;
+                margin: 0;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .voucher-card {
+                page-break-inside: avoid;
+                max-width: 210mm;
+            }
+        }
+        /* Voucher Grid Styles */
+        
+        .voucher-grid {
+            display: grid;
+            gap: 1px;
+            margin-top: 10px;
+            max-width: 210mm;
+        }
+        
+        .voucher-card {
+            background-color: white;
+        }
+        
+        .voucher-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9px;
+            font-weight: bold;
+        }
+        
+        .voucher-card th {
+            font-weight: bold;
+        }
+        
+        .voucher-table th,
+        .voucher-table td {
+            border: 0.5px solid gray;
+            padding: 1px;
+            text-align: center;
+        }
+        
+        .network-header {
+            text-align: center;
+            font-weight: bold;
+            padding: 1.5px;
+            background-color: #e6f7ff;
+        }
+        
+        #scriptBtn {
+            background-color: #ff9800;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Generator Page -->
+    <div class="generator-container" id="generatorPage">
+        <h3>MikroTik Voucher Generator Pro</h3>
+
+        <div class="form-section">
+            <div>
+                <div class="form-group">
+                    <label for="networkName">Network Name:</label>
+                    <input type="text" id="networkName" value="MyHotspot Network">
+                </div>
+
+                <div class="form-group">
+                    <label for="usernameType">Username Type:</label>
+                    <select id="usernameType">
+                        <option value="prefix">Prefix + Number</option>
+                        <option value="random" selected>Random</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="usernamePrefixGroup">
+                    <label for="usernamePrefix">Username Prefix:</label>
+                    <input type="text" id="usernamePrefix" value="user">
+                </div>
+
+                <div class="form-group">
+                    <label for="usernameLength">Username Length:</label>
+                    <input type="number" id="usernameLength" min="4" max="20" value="8">
+                </div>
+
+                <div style="display: none;" class="form-group" id="usernameCharsetGroup" style="display: none;">
+                    <label for="usernameCharset">Username Characters:</label>
+                    <select id="usernameCharset">
+                        <option value="mixed">Letters & Numbers</option>
+                        <option value="letters">Letters Only</option>
+                        <option value="numbers" selected>Numbers Only</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <div class="form-group">
+                    <label for="passwordLength">Password Length:</label>
+                    <input type="number" id="passwordLength" min="4" max="20" value="4">
+                </div>
+
+                <div class="form-group">
+                    <label for="passwordType">Password Type:</label>
+                    <select id="passwordType">
+                        <option value="mixed">Letters & Numbers</option>
+                        <option value="letters">Letters Only</option>
+                        <option value="numbers" selected>Numbers Only</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="userCount">Number of Vouchers:</label>
+                    <input type="number" id="userCount">
+                </div>
+
+                <div class="form-group" style="display:none">
+                    <label for="columns">Columns per Page:</label>
+                    <select id="columns">
+                        <option value="2">2 Columns</option>
+                        <option value="3">3 Columns</option>
+                        <option value="4">4 Columns</option>
+                        <option value="5">5 Columns</option>
+                        <option value="6" selected>6 Columns</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <div class="form-group">
+                    <label for="userType">User Type:</label>
+                    <select id="userType" onchange="showUsersLimits()">
+                        <option value="hotspot">Hotspot Users</option>
+                        <option value="usermanager6">UserManager (v6)</option>
+                        <option value="usermanager7">UserManager (v7+)</option>
+                    </select>
+                </div>
+
+                <div class="userLimits">
+                    <div id="forHotspot">
+                        <div class="form-group">
+                            <label for="dataLimit">Data Limit:</label>
+                            <div style="display: flex;">
+                                <input type="number" id="dataLimit" min="1" value="500" style="flex: 1;">
+                                <select id="dataLimitUnit" style="width: 100px; margin-left: 10px;">
+                                    <option value="1">Bytes</option>
+                                    <option value="1024">KB</option>
+                                    <option value="1048576" selected>MB</option>
+                                    <option value="1073741824">GB</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="timeLimit">Time Limit (hours):</label>
+                            <input type="number" id="timeLimit" min="1" value="0">
+                        </div>
+                    </div>
+
+                    <div id="forUserManager" style="display: none;">
+                        <div class="form-group">
+                            <label for="user-manager-profile">Profile</label>
+                            <input type="text" id="userManagerProfile">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="checkbox-group">
+            <h3>Select which fields to display:</h3>
+            <div class="checkbox-item">
+                <input type="checkbox" id="showUsername" checked>
+                <label for="showUsername">Username</label>
+            </div>
+            <div class="checkbox-item">
+                <input type="checkbox" id="showPassword" checked>
+                <label for="showPassword">Password</label>
+            </div>
+            <div class="showFor" style="display: flex;">
+                <div id="showForHotspot">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="showDataLimit">
+                        <label for="showDataLimit">size</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="showTimeLimit">
+                        <label for="showDataLimit">Time Limit</label>
+                    </div>
+                </div>
+                <div id="showForUserManager" style="display: none;">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="showProfile">
+                        <label for="showProfile">Profile</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button id="generateBtn">Generate Vouchers</button>
+    </div>
+
+    <!-- Print-Optimized Page -->
+    <div class="print-container" id="printPage">
+        <div class="no-print" style="margin-bottom: 20px;">
+            <button onclick="window.print()">Print to PDF</button>
+            <button onclick="backToGenerator()">Back to Generator</button>
+            <a id="downloadScript" style="display: none;">
+                <button id="scriptBtn">Download MikroTik Script</button>
+            </a>
+        </div>
+        <div class="voucher-grid" id="voucherGrid"></div>
+    </div>
+
+    <script>
+        // Generate MikroTik script
+        let mikrotikScript = "";
+        const dataUnitText = document.getElementById("dataLimitUnit").options[document.getElementById("dataLimitUnit").selectedIndex].text
+        const hotspotLimits = document.getElementById("forHotspot");
+        const hotspotLimitsCheck = document.getElementById("showForHotspot");
+        const userProfile = document.getElementById("forUserManager");
+        const userProfileCheck = document.getElementById("showForUserManager");
+        const profileName = document.getElementById("userManagerProfile")
+
+        // Toggle username options based on type
+        document.getElementById('usernameType').addEventListener('change', function() {
+            const isRandom = this.value === 'random';
+            document.getElementById('usernamePrefixGroup').style.display = isRandom ? 'none' : 'block';
+            document.getElementById('usernameCharsetGroup').style.display = isRandom ? 'block' : 'none';
+        });
+
+        //toggle the show usermanager profile input
+        function showUsersLimits() {
+            const userType = document.getElementById("userType").options[document.getElementById("userType").selectedIndex].text
+            if (userType == 'Hotspot Users') {
+                hotspotLimits.style.display = 'block'
+                userProfile.style.display = 'none'
+                hotspotLimitsCheck.style.display = 'block'
+                userProfileCheck.style.display = 'none'
+            } else {
+                hotspotLimits.style.display = 'none'
+                userProfile.style.display = 'block'
+                hotspotLimitsCheck.style.display = 'none'
+                userProfileCheck.style.display = 'block'
+
+            }
+            console.log(" hello form show user-manager", userType)
+        }
+
+        const usedPasswords = new Set();
+        const passwords = [];
+
+        function generateUniquePassword(allpasswords, iterations, chartype) {
+
+            for (let i = 0; i < allpasswords; i++) {
+                let password;
+                let attempts = 0;
+                const maxAttempts = 100; // Prevent infinite loops
+
+                do {
+                    // Generate random password
+                    password = generateRandomPassword(iterations, chartype);
+                    attempts++;
+
+                    if (attempts >= maxAttempts) {
+                        throw new Error(`Failed to generate unique password after ${maxAttempts} attempts`);
+                    }
+                } while (usedPasswords.has(password));
+
+                // Store the generated password
+                usedPasswords.add(password);
+                passwords.push(password);
+            }
+
+            return passwords.length === 1 ? passwords[0] : passwords;
+        }
+
+        function generateRandomPassword(length, type) {
+            const letters = "abcdefghijklmnopqrstuvwxyz";
+            const numbers = "0123456789";
+            let password = "";
+
+            let charset = ''
+            type == 'numbers' ? charset = numbers : charset = letters;
+
+            // Fill the rest with random characters
+            for (let i = password.length; i < length; i++) {
+                password += charset.charAt(Math.floor(Math.random() * charset.length));
+            }
+
+            // Shuffle the password to mix the required characters
+            return password.split('').sort(() => Math.random() - 0.5).join('');
+        }
+
+        // Generate all vouchers
+        function generateVouchers() {
+            const networkName = document.getElementById('networkName').value;
+            const usernameType = document.getElementById('usernameType').value;
+            const usernamePrefix = document.getElementById('usernamePrefix').value;
+            const usernameLength = parseInt(document.getElementById('usernameLength').value);
+            const usernameCharset = document.getElementById('usernameCharset').value;
+            const passwordLength = parseInt(document.getElementById('passwordLength').value);
+            const passwordType = document.getElementById('passwordType').value;
+            const userCount = parseInt(document.getElementById('userCount').value);
+            const columns = parseInt(document.getElementById('columns').value);
+            const dataLimit = parseInt(document.getElementById('dataLimit').value);
+            const dataLimitUnit = parseInt(document.getElementById('dataLimitUnit').value);
+            const timeLimit = parseInt(document.getElementById('timeLimit').value);
+            const userType = document.getElementById('userType').value;
+            const showPassword = document.getElementById('showPassword').checked;
+            // const usermanager7Profile = document.getElementById('userManager7').value;
+            const grid = document.getElementById('voucherGrid');
+            grid.innerHTML = '';
+            grid.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+
+            generateUniquePassword(userCount, usernameLength, passwordType)
+
+            console.log(passwords)
+
+            if (userType === 'hotspot') {
+                mikrotikScript += " /ip hotspot user\n";
+            } else if (userType === 'usermanager6') {
+                mikrotikScript += " /tool user-manager user\n";
+            } else if (userType === 'usermanager7') {
+                mikrotikScript += `/user-manager/user\n`
+            }
+
+            // this just for add it a comment show the date when genrating
+            //date part
+            const now = new Date();
+            const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+            const month = months[now.getMonth()]
+            const day = String(now.getDate()).padStart(2, '0');
+            const year = now.getFullYear();
+            const datePart = `${month}/${day}/${year}`
+
+            //time part
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const timepart = `${hours}:${minutes}:${seconds}`
+
+            // Generate all voucher cards
+            let usernameProfile = []
+            for (let i = 0; i <= userCount - 1; i++) {
+                let username = passwords[i]
+                usernameProfile[i] = username;
+
+                const password = generateRandomPassword(passwordLength, passwordType);
+                const totalBytes = dataLimit * dataLimitUnit;
+
+                let dataLimitDisplay;
+                if (dataLimitUnit === 1) dataLimitDisplay = dataLimit + ' Bytes';
+                else if (dataLimitUnit === 1024) dataLimitDisplay = dataLimit + ' KB';
+                else if (dataLimitUnit === 1048576) dataLimitDisplay = dataLimit + ' MB';
+                else dataLimitDisplay = dataLimit + ' GB';
+
+                // Create voucher card
+                const card = document.createElement('div');
+                card.className = 'voucher-card';
+                let cardHTML = `
+                    <table class="voucher-table">
+                        <tr>
+                            <th colspan="2" class="network-header">${networkName}</th>
+                        </tr>
+                `;
+
+                if (document.getElementById('showUsername').checked) {
+                    cardHTML += `
+                        <tr>
+                            <td>الاسم</td>
+                            <td style="font-size:11px;">${username}</td>
+                        </tr>
+                    `;
+                }
+
+                if (showPassword) {
+                    cardHTML += `
+                        <tr>
+                            <td>كلمة السر</td>
+                            <td style="font-size:11px;">${password}</td>
+                        </tr>
+                    `;
+                }
+
+                if (document.getElementById('showDataLimit').checked) {
+                    cardHTML += `
+                        <tr>
+                            <td>الحجم</td>
+                            <td style="direction:ltr;-">${dataLimitDisplay}</td>
+                        </tr>
+                    `;
+                }
+
+                if (document.getElementById('showTimeLimit').checked) {
+                    cardHTML += `
+                        <tr>
+                            <td>مدة الكرت</td>
+                            <td style="direction:ltr;">${timeLimit} hours</td>
+                        </tr>
+                    `;
+                }
+
+                if (document.getElementById('showProfile').checked) {
+                    cardHTML += `
+                        <tr>
+                            <td>الحجم</td>
+                            <td style="direction:ltr;">${profileName.value}</td>
+                        </tr>
+                    `;
+                }
+
+                cardHTML += `</table>`;
+                card.innerHTML = cardHTML;
+                grid.appendChild(card);
+
+                // Add to MikroTik script
+                if (userType === 'hotspot') {
+                    (showPassword) ? mikrotikScript += ` add comment="${datePart}#${timepart}" name="${username}" password="${password}" profile="default" `: mikrotikScript += ` add comment="${datePart}#${timepart}" name=${username} profile=default `;
+                    mikrotikScript += ` limit-uptime=${String(timeLimit).length > 1 ? timeLimit : `${timeLimit}0`}:00:00 limit-bytes-total=${totalBytes}\n`;
+                } else if (userType === 'usermanager6') {
+                    (showPassword) ? mikrotikScript += ` add comment="${datePart}#${timepart}" customer=admin username="${username}" password="${password}"\n` : mikrotikScript += ` add comment="${datePart}#${timepart}" customer=admin username="${username}"\n`;
+                } else if (userType === 'usermanager7') {
+                    (showPassword) ? mikrotikScript += ` add comment="${datePart}#${timepart}" name="${username}" password="${password}"\n` : mikrotikScript += ` add comment="${datePart}#${timepart}" name="${username}"\n`;
+                }
+            }
+
+            if (userType === 'usermanager7') {
+                mikrotikScript += `\n/user-manager/user-profile\n`
+                for (let i = 0; i <= userCount - 1; i++) {
+                    mikrotikScript += ` add profile="${profileName.value}" user="${usernameProfile[i]}"\n`
+                }
+                usernameProfile = []
+            }
+            
+            if (userType === 'usermanager6') {
+                for (let i = 0; i <= userCount - 1; i++) {
+                
+                    mikrotikScript += ` /tool user-manager user create-and-activate-profile customer=admin profile=${profileName.value} numbers="${usernameProfile[i]}"\n`
+                }
+                usernameProfile = []
+            }
+
+            // Switch to print view
+            document.getElementById('generatorPage').style.display = 'none';
+            document.getElementById('printPage').style.display = 'block';
+
+            //download button
+            const blob = new Blob([mikrotikScript], {
+                type: 'text/plain'
+            });
+
+            const url = URL.createObjectURL(blob);
+            const downloadLink = document.getElementById('downloadScript');
+            downloadLink.href = url;
+            downloadLink.download = `${userCount}-${dataLimit}${dataUnitText}.rsc`;
+            downloadLink.style.display = 'inline-block';
+        }
+
+        // Return to generator
+        function backToGenerator() {
+            document.getElementById('printPage').style.display = 'none';
+            document.getElementById('generatorPage').style.display = 'block';
+            usedPasswords.clear()
+            while (passwords.length > 0) {
+                passwords.pop()
+            }
+            passwords.pop()
+            mikrotikScript = "";
+        }
+
+        // Event listeners
+        document.getElementById('generateBtn').addEventListener('click', generateVouchers);
+    </script>
+</body>
+
+</html>
