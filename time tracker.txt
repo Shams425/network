@@ -1,0 +1,46 @@
+﻿# Run every 5 minutes with scheduler
+
+:local curDate [/system clock get date];
+:local curTime [/system clock get time];
+:local curNow "$curDate $curTime";
+
+# Define mapping of profiles to limits (in seconds)
+:local profileLimits {
+    "1h"=3600;
+    "6h"=21600;
+    "12h"=43200;
+    "24h"=86400;
+};
+
+:foreach i in=[/ip hotspot user find] do={
+
+    :local u [/ip hotspot user get $i name];
+    :local c [/ip hotspot user get $i comment];
+    :local p [/ip hotspot user get $i profile];
+
+    # Get time limit from profile
+    :local limit ($profileLimits->$p);
+    :if ([:len $limit] = 0) do={
+        :log warning ("No time limit defined for profile $p (user $u)");
+        :set limit 0;
+    };
+
+    # Check if we already have a __start marker
+    :local startTime "";
+    :if ([:find $c "__start="] != nil) do={
+        :set startTime [:pick $c ([:find $c "__start="] + 8) [:len $c]];
+    } else={
+        :set startTime $curNow;
+        /ip hotspot user set $i comment=($c." __start=".$curNow." __limit=".$limit);
+        :log info ("Init tracking for user $u ($p) with limit $limit seconds");
+    };
+
+    # Convert to seconds and calculate difference
+    :local diff ([:totime $curNow] - [:totime $startTime]);
+
+    # If expired → remove user completely
+    :if (($limit > 0) && ($diff > $limit)) do={
+        /ip hotspot user remove $i;
+        :log info ("User $u (profile $p) REMOVED after $diff seconds");
+    };
+};
