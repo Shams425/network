@@ -7,14 +7,14 @@
     <title>MikroTik Voucher Generator Pro</title>
     <style>
         /* Generator Page Styles */
-        
+
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 20px;
             background-color: #f5f5f5;
         }
-        
+
         .generator-container {
             max-width: 1200px;
             margin: 0 auto;
@@ -23,25 +23,25 @@
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
-        
+
         .form-section {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 10px;
             margin-bottom: 10px;
         }
-        
+
         .form-group {
             margin-bottom: 15px;
         }
-        
+
         label {
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
             font-size: 15px;
         }
-        
+
         input,
         select {
             width: 100%;
@@ -51,7 +51,7 @@
             box-sizing: border-box;
             font-size: 16px;
         }
-        
+
         button {
             background-color: #4CAF50;
             color: white;
@@ -62,11 +62,11 @@
             font-size: 16px;
             margin: 5px;
         }
-        
+
         button:hover {
             background-color: #45a049;
         }
-        
+
         .checkbox-group {
             margin-top: 15px;
             padding: 15px;
@@ -74,38 +74,41 @@
             border-radius: 5px;
             border: 1px solid #ddd;
         }
-        
+
         .checkbox-item {
             margin-bottom: 10px;
             display: flex;
             align-items: center;
         }
-        
+
         .checkbox-item input {
             width: auto;
             margin-right: 8px;
         }
-        
+
         .checkbox-item label {
             margin-bottom: 0;
             font-weight: normal;
         }
+
         /* Print Page Styles */
-        
+
         .print-container {
             display: none;
             padding: 3px;
         }
-        
+
         @media print {
             body * {
                 visibility: hidden;
                 direction: rtl;
             }
+
             .print-container,
             .print-container * {
                 visibility: visible;
             }
+
             .print-container {
                 position: absolute;
                 left: 0;
@@ -114,52 +117,55 @@
                 padding: 0;
                 margin: 0;
             }
+
             .no-print {
                 display: none !important;
             }
+
             .voucher-card {
                 page-break-inside: avoid;
                 max-width: 210mm;
             }
         }
+
         /* Voucher Grid Styles */
-        
+
         .voucher-grid {
             display: grid;
             gap: 1px;
             margin-top: 10px;
             max-width: 210mm;
         }
-        
+
         .voucher-card {
             background-color: white;
         }
-        
+
         .voucher-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 9px;
             font-weight: bold;
         }
-        
+
         .voucher-card th {
             font-weight: bold;
         }
-        
+
         .voucher-table th,
         .voucher-table td {
             border: 0.5px solid gray;
             padding: 1px;
             text-align: center;
         }
-        
+
         .network-header {
             text-align: center;
             font-weight: bold;
             padding: 1.5px;
             background-color: #e6f7ff;
         }
-        
+
         #scriptBtn {
             background-color: #ff9800;
         }
@@ -254,7 +260,8 @@
                             <label for="dataLimit">Data Limit:</label>
                             <div style="display: flex;">
                                 <input type="number" id="dataLimit" min="1" value="500" style="flex: 1;">
-                                <select id="dataLimitUnit" style="width: 100px; margin-left: 10px;">
+                                <select id="dataLimitUnit" style="width: 100px; margin-left: 10px;"
+                                    onchange=getDataLimit()>
                                     <option value="1">Bytes</option>
                                     <option value="1024">KB</option>
                                     <option value="1048576" selected>MB</option>
@@ -264,8 +271,14 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="timeLimit">Time Limit (hours):</label>
-                            <input type="number" id="timeLimit" min="1" value="0">
+                            <div style="margin-bottom: 10px;">
+                                <label for="timeLimit">Time Limit (hours):</label>
+                                <input type="number" id="timeLimit" min="1" value="0">
+                            </div>
+                            <div>
+                                <label for="timeLimit">Hotspot Profile</label>
+                                <input type="text" id="HSprofile">
+                            </div>
                         </div>
                     </div>
 
@@ -328,15 +341,15 @@
     <script>
         // Generate MikroTik script
         let mikrotikScript = "";
-        const dataUnitText = document.getElementById("dataLimitUnit").options[document.getElementById("dataLimitUnit").selectedIndex].text
         const hotspotLimits = document.getElementById("forHotspot");
         const hotspotLimitsCheck = document.getElementById("showForHotspot");
         const userProfile = document.getElementById("forUserManager");
         const userProfileCheck = document.getElementById("showForUserManager");
         const profileName = document.getElementById("userManagerProfile")
+        let showName = 1; //for naming the file (1 for the hostpot & 0 for the user-manager)
 
         // Toggle username options based on type
-        document.getElementById('usernameType').addEventListener('change', function() {
+        document.getElementById('usernameType').addEventListener('change', function () {
             const isRandom = this.value === 'random';
             document.getElementById('usernamePrefixGroup').style.display = isRandom ? 'none' : 'block';
             document.getElementById('usernameCharsetGroup').style.display = isRandom ? 'block' : 'none';
@@ -350,14 +363,24 @@
                 userProfile.style.display = 'none'
                 hotspotLimitsCheck.style.display = 'block'
                 userProfileCheck.style.display = 'none'
+                showName = 1;
             } else {
                 hotspotLimits.style.display = 'none'
                 userProfile.style.display = 'block'
                 hotspotLimitsCheck.style.display = 'none'
                 userProfileCheck.style.display = 'block'
+                showName = 0
 
             }
             console.log(" hello form show user-manager", userType)
+        }
+
+        //getting the data limit unite value
+        let dataLimitUnitText = "MB"
+
+        function getDataLimit() {
+            dataLimitUnitText = document.getElementById('dataLimitUnit').options[document.getElementById('dataLimitUnit').selectedIndex].text
+            console.log(dataLimitUnitText)
         }
 
         const usedPasswords = new Set();
@@ -419,6 +442,7 @@
             const dataLimit = parseInt(document.getElementById('dataLimit').value);
             const dataLimitUnit = parseInt(document.getElementById('dataLimitUnit').value);
             const timeLimit = parseInt(document.getElementById('timeLimit').value);
+            const hsProfile = document.getElementById('HSprofile').value;
             const userType = document.getElementById('userType').value;
             const showPassword = document.getElementById('showPassword').checked;
             // const usermanager7Profile = document.getElementById('userManager7').value;
@@ -429,6 +453,7 @@
             generateUniquePassword(userCount, usernameLength, passwordType)
 
             console.log(passwords)
+            console.log(hsProfile)
 
             if (userType === 'hotspot') {
                 mikrotikScript += " /ip hotspot user\n";
@@ -527,10 +552,11 @@
                 card.innerHTML = cardHTML;
                 grid.appendChild(card);
 
+
                 // Add to MikroTik script
                 if (userType === 'hotspot') {
-                    (showPassword) ? mikrotikScript += ` add comment="${datePart}#${timepart}" name="${username}" password="${password}" profile="default" `: mikrotikScript += ` add comment="${datePart}#${timepart}" name=${username} profile=default `;
-                    mikrotikScript += ` limit-uptime=${String(timeLimit).length > 1 ? timeLimit : `${timeLimit}0`}:00:00 limit-bytes-total=${totalBytes}\n`;
+                    (showPassword) ? mikrotikScript += ` add comment="${datePart}#${timepart}" name="${username}" password="${password}" profile="${(hsProfile) ? hsProfile : "default"}"` : mikrotikScript += ` add comment="${datePart}#${timepart}" name=${username} profile=default `;
+                    mikrotikScript += ` limit-uptime=${parseInt(String(timeLimit)) == 0 ? `00:00:00` : parseInt(String(timeLimit)) >= 10 ? `${timeLimit}:00:00` : `0${timeLimit}:00:00`} limit-bytes-total=${totalBytes}\n`;
                 } else if (userType === 'usermanager6') {
                     (showPassword) ? mikrotikScript += ` add comment="${datePart}#${timepart}" customer=admin username="${username}" password="${password}"\n` : mikrotikScript += ` add comment="${datePart}#${timepart}" customer=admin username="${username}"\n`;
                 } else if (userType === 'usermanager7') {
@@ -545,10 +571,10 @@
                 }
                 usernameProfile = []
             }
-            
+
             if (userType === 'usermanager6') {
                 for (let i = 0; i <= userCount - 1; i++) {
-                
+
                     mikrotikScript += ` /tool user-manager user create-and-activate-profile customer=admin profile=${profileName.value} numbers="${usernameProfile[i]}"\n`
                 }
                 usernameProfile = []
@@ -566,7 +592,7 @@
             const url = URL.createObjectURL(blob);
             const downloadLink = document.getElementById('downloadScript');
             downloadLink.href = url;
-            downloadLink.download = `${userCount}-${dataLimit}${dataUnitText}.rsc`;
+            downloadLink.download = `${userCount}-${(showName == 0) ? `${profileName.value}` : `${(parseInt(dataLimit) > 0) ? `${dataLimit}${dataLimitUnitText}` : `${hsProfile}`}`}.rsc`;
             downloadLink.style.display = 'inline-block';
         }
 
