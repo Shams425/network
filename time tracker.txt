@@ -1,46 +1,36 @@
-﻿# Run every 5 minutes with scheduler
+:local now [/system clock get time]; 
+:local today [/system clock get date]; 
+:local nowDateTime "$today $now"; 
 
-:local curDate [/system clock get date];
-:local curTime [/system clock get time];
-:local curNow "$curDate $curTime";
+:foreach u in=[/ip hotspot user find] do={ 
+    :local comment [/ip hotspot user get $u comment]; 
+    :local profile [/ip hotspot user get $u profile]; 
 
-# Define mapping of profiles to limits (in seconds)
-:local profileLimits {
-    "1h"=3600;
-    "6h"=21600;
-    "12h"=43200;
-    "24h"=86400;
-};
+    :local limit ""; 
+    :if ($profile="30d") do={ :set limit "720:00:00"; }; 
+    :if ($profile="7d") do={ :set limit "168:00:00"; }; 
+    :if ($profile="24h") do={ :set limit "24:00:00"; }; 
+    :if ($profile="12h") do={ :set limit "12:00:00"; }; 
+    :if ($profile="6h") do={ :set limit "06:00:00"; }; 
+    :if ($profile="1h") do={ :set limit "01:00:00"; }; 
 
-:foreach i in=[/ip hotspot user find] do={
-
-    :local u [/ip hotspot user get $i name];
-    :local c [/ip hotspot user get $i comment];
-    :local p [/ip hotspot user get $i profile];
-
-    # Get time limit from profile
-    :local limit ($profileLimits->$p);
-    :if ([:len $limit] = 0) do={
-        :log warning ("No time limit defined for profile $p (user $u)");
-        :set limit 0;
-    };
-
-    # Check if we already have a __start marker
-    :local startTime "";
-    :if ([:find $c "__start="] != nil) do={
-        :set startTime [:pick $c ([:find $c "__start="] + 8) [:len $c]];
-    } else={
-        :set startTime $curNow;
-        /ip hotspot user set $i comment=($c." __start=".$curNow." __limit=".$limit);
-        :log info ("Init tracking for user $u ($p) with limit $limit seconds");
-    };
-
-    # Convert to seconds and calculate difference
-    :local diff ([:totime $curNow] - [:totime $startTime]);
-
-    # If expired → remove user completely
-    :if (($limit > 0) && ($diff > $limit)) do={
-        /ip hotspot user remove $i;
-        :log info ("User $u (profile $p) REMOVED after $diff seconds");
-    };
+    :if ($limit!="") do={ 
+        :if ([:typeof [:find $comment "__start="]]="nil") do={ 
+           
+            :if ([:len [/ip hotspot active find where user=[/ip hotspot user get $u name]]] > 0) do={ 
+                
+                /ip hotspot user set $u comment="__start=$nowDateTime;__limit=$limit"; 
+            }; 
+        } else={ 
+             
+            :local startStr [:pick $comment ([:find $comment "__start="] + 8) [:find $comment ";__limit="]]; 
+            :local limitStr [:pick $comment ([:find $comment "__limit="] + 8) [:len $comment]]; 
+            :local startTime [:totime $startStr]; 
+            :local limitTime [:totime $limitStr]; 
+            :local elapsed ([:totime $nowDateTime] - $startTime); 
+            :if ($elapsed > $limitTime) do={ 
+                /ip hotspot user remove $u; 
+            }; 
+        }; 
+    }; 
 };
