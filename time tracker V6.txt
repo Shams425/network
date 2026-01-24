@@ -1,0 +1,80 @@
+:local now [/system clock get time];
+:local today [/system clock get date];
+:local nowDateTime "$today $now";
+
+:foreach u in=[/ip hotspot user find] do={
+    :local name [/ip hotspot user get $u name];
+    :local comment [/ip hotspot user get $u comment];
+    :local profile [/ip hotspot user get $u profile];
+
+    :local limit "";
+    :if ($profile="30d") do={ :set limit "720:00:00"; };
+    :if ($profile="20m") do={ :set limit "00:20:00"; };
+    :if ($profile="7d")  do={ :set limit "168:00:00"; };
+    :if ($profile="12h") do={ :set limit "12:00:00"; };
+    :if ($profile="24h") do={ :set limit "24:00:00"; };
+
+    :if ($limit != "") do={
+
+        :local activeId [/ip hotspot active find where user=$name];
+        :if ([:len $activeId] > 0) do={
+
+            :if ([:typeof [:find $comment "__start="]] = "nil") do={
+                /ip hotspot user set $u comment="__start=$nowDateTime;__limit=$limit";
+                :set comment ("__start=" . $nowDateTime . ";__limit=" . $limit);
+            };
+
+            :if ([:typeof [:find $comment "__start="]] != "nil") do={
+
+                :local startStr [:pick $comment ([:find $comment "__start="] + 8) [:find $comment ";__limit="]];
+                :local limitStr [:pick $comment ([:find $comment "__limit="] + 8) [:len $comment]];
+
+                :local monthName [:pick $startStr 0 3];
+                :local monthNum 0;
+                :if ($monthName="jan") do={:set monthNum 1;}; :if ($monthName="feb") do={:set monthNum 2;};
+                :if ($monthName="mar") do={:set monthNum 3;}; :if ($monthName="apr") do={:set monthNum 4;};
+                :if ($monthName="may") do={:set monthNum 5;}; :if ($monthName="jun") do={:set monthNum 6;};
+                :if ($monthName="jul") do={:set monthNum 7;}; :if ($monthName="aug") do={:set monthNum 8;};
+                :if ($monthName="sep") do={:set monthNum 9;}; :if ($monthName="oct") do={:set monthNum 10;};
+                :if ($monthName="nov") do={:set monthNum 11;}; :if ($monthName="dec") do={:set monthNum 12;};
+
+                :local day [:tonum [:pick $startStr 4 6]];
+                :local year [:tonum [:pick $startStr 7 11]];
+                :local hour [:tonum [:pick $startStr 12 14]];
+                :local minute [:tonum [:pick $startStr 15 17]];
+                :local second [:tonum [:pick $startStr 18 20]];
+
+                :local startSeconds (($year * 365 * 24 * 3600) + ($monthNum * 30 * 24 * 3600) + ($day * 24 * 3600) + ($hour * 3600) + ($minute * 60) + $second);
+
+                :local nowMonthName [:pick $today 0 3];
+                :local nowMonthNum 0;
+                :if ($nowMonthName="jan") do={:set nowMonthNum 1;}; :if ($nowMonthName="feb") do={:set nowMonthNum 2;};
+                :if ($nowMonthName="mar") do={:set nowMonthNum 3;}; :if ($nowMonthName="apr") do={:set nowMonthNum 4;};
+                :if ($nowMonthName="may") do={:set nowMonthNum 5;}; :if ($nowMonthName="jun") do={:set nowMonthNum 6;};
+                :if ($nowMonthName="jul") do={:set nowMonthNum 7;}; :if ($nowMonthName="aug") do={:set nowMonthNum 8;};
+                :if ($nowMonthName="sep") do={:set nowMonthNum 9;}; :if ($nowMonthName="oct") do={:set nowMonthNum 10;};
+                :if ($nowMonthName="nov") do={:set nowMonthNum 11;}; :if ($nowMonthName="dec") do={:set nowMonthNum 12;};
+
+                :local nowDay [:tonum [:pick $today 4 6]];
+                :local nowYear [:tonum [:pick $today 7 11]];
+                :local nowHour [:tonum [:pick $now 0 2]];
+                :local nowMinute [:tonum [:pick $now 3 5]];
+                :local nowSecond [:tonum [:pick $now 6 8]];
+
+                :local nowSeconds (($nowYear * 365 * 24 * 3600) + ($nowMonthNum * 30 * 24 * 3600) + ($nowDay * 24 * 3600) + ($nowHour * 3600) + ($nowMinute * 60) + $nowSecond);
+
+                :local elapsedSeconds ($nowSeconds - $startSeconds);
+
+                :local limitParts [:toarray $limitStr ":"];
+                :local h [:tonum ($limitParts->0)];
+                :local m [:tonum ($limitParts->1)];
+                :local s [:tonum ($limitParts->2)];
+                :local limitSeconds (($h * 3600) + ($m * 60) + $s);
+
+                :if ($elapsedSeconds > $limitSeconds) do={
+                    /ip hotspot user remove $u;
+                };
+            };
+        };
+    };
+};
