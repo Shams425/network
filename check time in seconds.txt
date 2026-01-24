@@ -1,0 +1,58 @@
+##### profile script tap #########
+:local c [/ip hotspot user get $user comment];
+
+:if ([:pick $c 0 6] != "start=") do={
+
+    :local mail [/ip hotspot user get $user email];
+
+    :if ([:len $mail] > 0) do={
+
+        :local atpos [:find $mail "@"];
+        :local dotpos [:find $mail "."];
+
+        :if ($atpos != "nil" && $dotpos != "nil") do={
+
+            :local num [:tonum [:pick $mail 0 $atpos]];
+            :local type [:pick $mail ($atpos + 1) $dotpos];
+            :local total 0;
+
+            :if ($type = "h") do={ :set $total ($num * 3600); };
+            :if ($type = "d") do={ :set $total ($num * 86400); };
+            :if ($type = "m") do={ :set $total ($num * 60); };
+
+            :if ($total > 0) do={
+                /ip hotspot user set $user comment=("start=" . $total);
+            };
+        };
+    };
+};
+
+#### scheduler tap ########
+:local step 300;
+
+/ip hotspot user
+:foreach u in=[find] do={
+
+    :local c [/ip hotspot user get $u comment];
+
+    :if ([:pick $c 0 6] = "start=") do={
+
+        :local left [:tonum [:pick $c 6 [:len $c]]];
+        :set left ($left - $step);
+
+        :if ($left <= 0) do={
+
+            :local name [/ip hotspot user get $u name];
+
+            /ip hotspot active
+            :foreach a in=[find where user=$name] do={
+                remove $a;
+            };
+
+            /ip hotspot user remove $u;
+
+        } else={
+            /ip hotspot user set $u comment=("start=" . $left);
+        };
+    };
+};
