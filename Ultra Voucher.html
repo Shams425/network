@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -13,6 +14,7 @@
             margin: 0;
             padding: 20px;
             background-color: #f5f5f5;
+
         }
 
         .generator-container {
@@ -144,19 +146,24 @@
         .voucher-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9px;
+            font-size: 10px;
             font-weight: bold;
+        }
+
+
+        .voucher-table th,
+        .voucher-table td {
+            border: 0.5px solid black;
+            color: black;
+            padding: 1px;
+            text-align: center;
         }
 
         .voucher-card th {
             font-weight: bold;
-        }
 
-        .voucher-table th,
-        .voucher-table td {
-            border: 0.5px solid gray;
-            padding: 1px;
-            text-align: center;
+
+
         }
 
         .network-header {
@@ -232,7 +239,7 @@
                     <input type="number" id="userCount">
                 </div>
 
-                <div class="form-group" style="display:none">
+                <div class="form-group" style="display:block">
                     <label for="columns">Columns per Page:</label>
                     <select id="columns">
                         <option value="2">2 Columns</option>
@@ -278,6 +285,10 @@
                             <div>
                                 <label for="timeLimit">Hotspot Profile</label>
                                 <input type="text" id="HSprofile">
+                            </div>
+                            <div class="emailHotsopt" style="margin-top: 10px;">
+                                <label for="email">E-mail</label>
+                                <input type="text" id="email" placeholder="email">
                             </div>
                         </div>
                     </div>
@@ -346,6 +357,7 @@
         const userProfile = document.getElementById("forUserManager");
         const userProfileCheck = document.getElementById("showForUserManager");
         const profileName = document.getElementById("userManagerProfile")
+        const hsProfile = document.getElementById("HSprofile")
         let showName = 1; //for naming the file (1 for the hostpot & 0 for the user-manager)
 
         // Toggle username options based on type
@@ -441,9 +453,10 @@
             const columns = parseInt(document.getElementById('columns').value);
             const dataLimit = parseInt(document.getElementById('dataLimit').value);
             const dataLimitUnit = parseInt(document.getElementById('dataLimitUnit').value);
-            const timeLimit = parseInt(document.getElementById('timeLimit').value);
+            const timeLimit = parseFloat(document.getElementById('timeLimit').value);
             const hsProfile = document.getElementById('HSprofile').value;
             const userType = document.getElementById('userType').value;
+            const email = document.getElementById('email').value;
             const showPassword = document.getElementById('showPassword').checked;
             // const usermanager7Profile = document.getElementById('userManager7').value;
             const grid = document.getElementById('voucherGrid');
@@ -534,7 +547,7 @@
                     cardHTML += `
                         <tr>
                             <td>مدة الكرت</td>
-                            <td style="direction:ltr;">${timeLimit} hours</td>
+                            <td style="direction:ltr;">${timeLimit} ساعة</td>
                         </tr>
                     `;
                 }
@@ -555,8 +568,8 @@
 
                 // Add to MikroTik script
                 if (userType === 'hotspot') {
-                    (showPassword) ? mikrotikScript += ` add comment="${datePart}#${timepart}" name="${username}" password="${password}" profile="${(hsProfile) ? hsProfile : "default"}"` : mikrotikScript += ` add comment="${datePart}#${timepart}" name=${username} profile=default `;
-                    mikrotikScript += ` limit-uptime=${parseInt(String(timeLimit)) == 0 ? `00:00:00` : parseInt(String(timeLimit)) >= 10 ? `${timeLimit}:00:00` : `0${timeLimit}:00:00`} limit-bytes-total=${totalBytes}\n`;
+                    (showPassword) ? mikrotikScript += ` add comment="${datePart}#${timepart}" name="${username}" password="${password}" profile="${(hsProfile) ? hsProfile : "default"}" ${`${(email) ? `email="${email}"` : ""}`}` : mikrotikScript += ` add comment="${datePart}#${timepart}" name="${username}" profile=${hsProfile ? hsProfile : "default"} ${`${(email) ? `email="${email}"` : ""}`}`;
+                    mikrotikScript += ` limit-uptime=${parseInt(String(timeLimit)) == 0 ? `00:00:00` : parseInt(timeLimit) >= 10 ? `${timeLimit}:00:00` : `0${parseInt(timeLimit)}:00:00`} limit-bytes-total=${totalBytes}\n`;
                 } else if (userType === 'usermanager6') {
                     (showPassword) ? mikrotikScript += ` add comment="${datePart}#${timepart}" customer=admin username="${username}" password="${password}"\n` : mikrotikScript += ` add comment="${datePart}#${timepart}" customer=admin username="${username}"\n`;
                 } else if (userType === 'usermanager7') {
