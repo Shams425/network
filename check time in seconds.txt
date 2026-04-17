@@ -38,7 +38,7 @@
     :if ([:pick $c 0 6] = "start=") do={
 
         :local left [:tonum [:pick $c 6 [:len $c]]];
-        :set left ($left - $step);
+        :set $left ($left - $step);
 
         :if ($left <= 0) do={
 
