@@ -1,12 +1,32 @@
-:foreach tmpI in=[/ip hotspot user find where (limit-bytes-total > 0)] do={
-  :local tmpName value=[/ip hotspot user get $tmpI name];
-  :local tmpLimitTotal value=[/ip hotspot user get $tmpI limit-bytes-total];
-  :local tmpIn value=[/ip hotspot user get $tmpI bytes-in];
-  :local tmpOut value=[/ip hotspot user get $tmpI bytes-out];
-  :local tmpUsed value=($tmpIn + $tmpOut);
+:foreach u in=[/ip hotspot user find] do={
 
-  :if ($tmpUsed >= $tmpLimitTotal) do={
-    /ip hotspot user remove $tmpI;
-    :log info ("Hotspot user " . $tmpName . " removed due to exceeding total data limit.");
-  }
-}
+    :local uptime [/ip hotspot user get $u uptime];
+    :local limitUptime [/ip hotspot user get $u limit-uptime];
+
+    :local bytesIn [/ip hotspot user get $u bytes-in];
+    :local bytesOut [/ip hotspot user get $u bytes-out];
+
+    :local limitBytes [/ip hotspot user get $u limit-bytes-total];
+
+    :local totalBytes ($bytesIn + $bytesOut);
+
+    :local remove false;
+
+    :if (($limitUptime != "") && ($uptime >= $limitUptime)) do={
+        :set remove true;
+    };
+
+    :if (($limitBytes != "") && ($limitBytes > 0) && ($totalBytes >= $limitBytes)) do={
+        :set remove true;
+    };
+
+    :if ($remove = true) do={
+
+        :local uname [/ip hotspot user get $u name];
+
+        /ip hotspot active remove [find user=$uname];
+
+        /ip hotspot user remove $u;
+
+    };
+};
