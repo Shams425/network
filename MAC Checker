@@ -1,0 +1,20 @@
+:foreach i in=[/ip hotspot active find] do={
+
+    :local uname [/ip hotspot active get $i user];
+    :local umac [/ip hotspot active get $i mac-address];
+
+    :local c [/ip hotspot user get [find name=$uname] comment];
+
+    :if ([:find $c "@bind="] != nil) do={
+
+        :local p [:find $c "@bind="];
+
+        :local savedMac [:pick $c ($p + 6) ($p + 23)];
+
+        :if ($savedMac != $umac) do={
+
+            /ip hotspot active remove $i;
+
+        };
+    };
+};
