@@ -54,30 +54,21 @@
 #### scheduler tap ########
 :local step 300;
 
-/ip hotspot user;
-
+/ip hotspot user
 :foreach u in=[find] do={
 
-    :local c [get $u comment];
+    :local c [/ip hotspot user get $u comment];
 
     :if ([:pick $c 0 6] = "start=") do={
 
-        :local atpos [:find $c "@"];
-
-        :if ($atpos = nil) do={
-            :set atpos [:len $c];
-        };
-
-        :local left [:tonum [:pick $c 6 $atpos]];
-
+        :local left [:tonum [:pick $c 6 [:len $c]]];
         :set $left ($left - $step);
 
         :if ($left <= 0) do={
 
-            :local name [get $u name];
+            :local name [/ip hotspot user get $u name];
 
-            /ip hotspot active;
-
+            /ip hotspot active
             :foreach a in=[find where user=$name] do={
                 remove $a;
             };
@@ -85,14 +76,7 @@
             /ip hotspot user remove $u;
 
         } else={
-
-            :local suffix "";
-
-            :if ($atpos < [:len $c]) do={
-                :set suffix [:pick $c $atpos [:len $c]];
-            };
-
-            /ip hotspot user set $u comment=("start=" . $left . $suffix);
+            /ip hotspot user set $u comment=("start=" . $left);
         };
     };
-}
+};
