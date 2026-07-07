@@ -66,10 +66,10 @@
 
         :if ($left <= 0) do={
 
-            :local name [/ip hotspot user get $u name];
+            :local uname [/ip hotspot user get $u name];
 
             /ip hotspot active
-            :foreach a in=[find where user=$name] do={
+            :foreach a in=[find where user=$uname] do={
                 remove $a;
             };
 
