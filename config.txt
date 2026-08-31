@@ -1,0 +1,27 @@
+/interface bridge add name=hotspot;
+
+/interface bridge port add bridge=hotspot interface=ether2; interface bridge port add bridge=hotspot interface=ether3; interface bridge port add bridge=hotspot interface=ether4; interface bridge port add bridge=hotspot interface=ether5;
+
+/ip dhcp-client add interface=ether1 disabled=no use-peer-dns=yes use-peer-ntp=yes;
+
+/ip address add address=150.15.0.1/24 interface=hotspot;
+
+/ip pool add name=hs-pool ranges=150.15.0.10-150.15.0.254;
+
+/ip dhcp-server add name=hs-dhcp interface=hotspot address-pool=hs-pool disabled=no;
+
+/ip dhcp-server network add address=150.15.0.0/24 gateway=150.15.0.1 dns-server=8.8.8.8,8.8.4.4;
+
+/ip dns set allow-remote-requests=yes servers=8.8.8.8,8.8.4.4;
+
+/ip firewall nat add chain=srcnat out-interface=ether1 action=masquerade;
+
+/ip firewall mangle add action=change-ttl chain=postrouting new-ttl=set:1 out-interface=hotspot
+
+/ip hotspot profile add name=hs-profile hotspot-address=150.15.0.1 dns-name=www.wifi.com login-by=http-chap,http-pap,http-chap,cookie,mac-cookie use-radius=no;
+
+/ip hotspot add name=hotspot1 interface=hotspot address-pool=hs-pool profile=hs-profile;
+
+/ip hotspot user profile add name=default-users shared-users=1 rate-limit=2M/2M;
+
+/ip hotspot user add name=test password=qwe@123! profile=default-users;
